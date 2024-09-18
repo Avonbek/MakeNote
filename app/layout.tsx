@@ -1,4 +1,3 @@
-import { ClerkProvider } from "@clerk/nextjs";
 import Provider from "@/app/provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -11,7 +10,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL("https://starter.rasmic.xyz"),
   title: {
-    default: "AI Notes App",
+    default: "MakeNote",
     template: `%s | AI Notes App`,
   },
   description: "An AI-powered note-taking application",
@@ -24,23 +23,23 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    //   <AuthWrapper>
-    <html lang="en" suppressHydrationWarning>
-      <body className={GeistSans.className}>
-        <Provider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            {children}
-            <Toaster />
-          </ThemeProvider>
-        </Provider>
-        <Analytics />
-      </body>
-    </html>
-    //   </AuthWrapper>
+    <AuthWrapper>
+      <html lang="en" suppressHydrationWarning>
+        <body className={GeistSans.className}>
+          <Provider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+            >
+              {children}
+              <Toaster />
+            </ThemeProvider>
+          </Provider>
+          <Analytics />
+        </body>
+      </html>
+    </AuthWrapper>
   );
 }

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Note } from "@/lib/utils";
+import { supabase } from "@/utils/supabase-client";
+import { Note } from "@/app/ai-notes/types";
 
 export function useNotes(user: any) {
   const [documents, setDocuments] = useState<Note[]>([]);
@@ -10,11 +11,18 @@ export function useNotes(user: any) {
     }
   }, [user]);
 
-  const fetchNotes = () => {
+  const fetchNotes = async () => {
     if (!user) return;
-    const storedNotes = localStorage.getItem(`notes_${user.id}`);
-    if (storedNotes) {
-      setDocuments(JSON.parse(storedNotes));
+    const { data, error } = await supabase
+      .from("notes")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching notes:", error);
+    } else {
+      setDocuments(data || []);
     }
   };
 
@@ -25,41 +33,36 @@ export function useNotes(user: any) {
       title,
       content,
       topic,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      user_id: user.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
-    const updatedNotes = [newNote, ...documents];
-    setDocuments(updatedNotes);
-    localStorage.setItem(`notes_${user.id}`, JSON.stringify(updatedNotes));
 
-    // Commented code for future database integration
-    // try {
-    //   const response = await axios.post("/api/ai-notes", {
-    //     title,
-    //     content,
-    //     topic,
-    //   });
-    //   setDocuments((prev) => [response.data, ...prev]);
-    // } catch (error) {
-    //   console.error("Error saving note:", error);
-    // }
+    const { data, error } = await supabase
+      .from("notes")
+      .insert([newNote])
+      .select();
+
+    if (error) {
+      console.error("Error adding note:", error);
+    } else if (data) {
+      setDocuments((prev) => [data[0], ...prev]);
+    }
   };
 
   const deleteNotes = async (ids: string[]) => {
     if (!user) return;
-    const updatedNotes = documents.filter((doc) => !ids.includes(doc.id));
-    setDocuments(updatedNotes);
-    localStorage.setItem(`notes_${user.id}`, JSON.stringify(updatedNotes));
+    const { error } = await supabase
+      .from("notes")
+      .delete()
+      .in("id", ids)
+      .eq("user_id", user.id);
 
-    // Commented code for future database integration
-    // try {
-    //   await Promise.all(
-    //     ids.map((id) => axios.delete("/api/ai-notes", { data: { id } }))
-    //   );
-    //   setDocuments((prev) => prev.filter((doc) => !ids.includes(doc.id)));
-    // } catch (error) {
-    //   console.error("Error deleting notes:", error);
-    // }
+    if (error) {
+      console.error("Error deleting notes:", error);
+    } else {
+      setDocuments((prev) => prev.filter((doc) => !ids.includes(doc.id)));
+    }
   };
 
   return { documents, fetchNotes, addNote, deleteNotes };
