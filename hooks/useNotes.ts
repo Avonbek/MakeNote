@@ -1,69 +1,111 @@
-import { useState, useEffect } from "react";
-import { supabase } from "@/utils/supabase-client";
-import { Note } from "@/app/ai-notes/types";
+import { useState } from "react";
+import { supabase } from "@/lib/utils";
 
-export function useNotes(user: any) {
-  const [documents, setDocuments] = useState<Note[]>([]);
+interface Note {
+  id: string;
+  title: string;
+  content: string;
+  topic: string;
+  created_at: string;
+  updated_at: string;
+  user_id: string;
+}
 
-  useEffect(() => {
-    if (user) {
-      fetchNotes();
-    }
-  }, [user]);
+export function useNotes() {
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchNotes = async () => {
-    if (!user) return;
-    const { data, error } = await supabase
-      .from("notes")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error } = await supabase
+        .from("Note")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-    if (error) {
-      console.error("Error fetching notes:", error);
-    } else {
-      setDocuments(data || []);
+      if (error) throw error;
+      setNotes(data || []);
+    } catch (err) {
+      setError("Failed to fetch notes");
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const addNote = async (title: string, content: string, topic: string) => {
-    if (!user) return;
-    const newNote: Note = {
-      id: Date.now().toString(),
-      title,
-      content,
-      topic,
-      user_id: user.id,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
+  const createNote = async (
+    note: Omit<Note, "id" | "created_at" | "updated_at" | "user_id">
+  ) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error } = await supabase
+        .from("Note")
+        .insert([note])
+        .select();
 
-    const { data, error } = await supabase
-      .from("notes")
-      .insert([newNote])
-      .select();
-
-    if (error) {
-      console.error("Error adding note:", error);
-    } else if (data) {
-      setDocuments((prev) => [data[0], ...prev]);
+      if (error) throw error;
+      setNotes((prevNotes) => [...(data || []), ...prevNotes]);
+    } catch (err) {
+      setError("Failed to create note");
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const deleteNotes = async (ids: string[]) => {
-    if (!user) return;
-    const { error } = await supabase
-      .from("notes")
-      .delete()
-      .in("id", ids)
-      .eq("user_id", user.id);
+  const updateNote = async (
+    id: string,
+    updates: Partial<Omit<Note, "id" | "created_at" | "updated_at" | "user_id">>
+  ) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error } = await supabase
+        .from("Note")
+        .update(updates)
+        .eq("id", id)
+        .select();
 
-    if (error) {
-      console.error("Error deleting notes:", error);
-    } else {
-      setDocuments((prev) => prev.filter((doc) => !ids.includes(doc.id)));
+      if (error) throw error;
+      setNotes((prevNotes) =>
+        prevNotes.map((note) =>
+          note.id === id ? { ...note, ...data?.[0] } : note
+        )
+      );
+    } catch (err) {
+      setError("Failed to update note");
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  return { documents, fetchNotes, addNote, deleteNotes };
+  const deleteNote = async (id: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { error } = await supabase.from("Note").delete().eq("id", id);
+
+      if (error) throw error;
+      setNotes((prevNotes) => prevNotes.filter((note) => note.id !== id));
+    } catch (err) {
+      setError("Failed to delete note");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return {
+    notes,
+    loading,
+    error,
+    fetchNotes,
+    createNote,
+    updateNote,
+    deleteNote,
+  };
 }

@@ -4,12 +4,11 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
-  url       = env("SUPABASE_URL")
-  directUrl = env("DIRECT_URL")
+  url       = env("SUPABASE_DIRECT_URL")
 }
 
-model user {
-  id                Int      @id @default(autoincrement())
+model User {
+  id        String   @id @default(cuid())
   created_time      DateTime @default(now())
   email             String   @unique
   first_name        String?
@@ -18,6 +17,7 @@ model user {
   profile_image_url String?
   user_id           String   @unique
   subscription      String?
+  notes             Note[]
 }
 
 model payments {
@@ -81,17 +81,4 @@ model Note {
   updated_at DateTime @updatedAt
   user_id    String
   user      User     @relation(fields: [user_id], references: [id])
-}
-
-model User {
-  id        String   @id @default(cuid())
-  created_time      DateTime @default(now())
-  email             String   @unique
-  first_name        String?
-  last_name         String?
-  gender            String?
-  profile_image_url String?
-  user_id           String   @unique
-  subscription      String?
-  notes             Note[]
 }

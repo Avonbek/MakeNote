@@ -1,4 +1,4 @@
-import { getAllBlogs } from "../utils/functions/blog/get-all-blogs";
+import { getAllBlogs } from "../starter_kit_utils/functions/blog/get-all-blogs";
 
 type BlogPost = {
   slug: string;

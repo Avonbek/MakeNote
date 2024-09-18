@@ -8,7 +8,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://starter.rasmic.xyz"),
+  metadataBase: new URL("https://starter.rasmic.xyz"), // once domain is set, update this
   title: {
     default: "MakeNote",
     template: `%s | AI Notes App`,

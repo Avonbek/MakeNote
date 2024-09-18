@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Note } from "../types";
+import { Note } from "@/lib/types";
 import NoteCard from "./NoteCard";
 import EmptyState from "./EmptyState";
 

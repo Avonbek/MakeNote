@@ -1,18 +1,18 @@
-import { userUpdateProps } from "@/utils/types";
-import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { createServerClient } from "@supabase/ssr";
+import { userCreateProps } from "@/lib/types";
 
-export const userUpdate = async ({
+export const userCreate = async ({
   email,
   first_name,
   last_name,
   profile_image_url,
   user_id,
-}: userUpdateProps) => {
+}: userCreateProps) => {
   const cookieStore = cookies();
 
   const supabase = createServerClient(
-    process.env.SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_KEY!,
     {
       cookies: {
@@ -25,8 +25,8 @@ export const userUpdate = async ({
 
   try {
     const { data, error } = await supabase
-      .from("User")
-      .update([
+      .from("user")
+      .insert([
         {
           email,
           first_name,
@@ -35,12 +35,10 @@ export const userUpdate = async ({
           user_id,
         },
       ])
-      .eq("email", email)
       .select();
 
-    if (data) return data;
-
-    if (error) return error;
+    if (error?.code) return error;
+    return data;
   } catch (error: any) {
     throw new Error(error.message);
   }

@@ -1,7 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { MoreVertical } from "lucide-react";
-import { Note } from "@/lib/utils";
+import { Note } from "@/lib/types";
 import {
   Card,
   CardContent,
@@ -88,7 +88,7 @@ export default function NoteCard({
             {doc.topic}
           </Badge>
           <span className="text-xs text-muted-foreground">
-            Last edited: {new Date(doc.updatedAt).toLocaleString()}
+            Last edited: {new Date(doc.updated_at).toLocaleString()}
           </span>
         </CardFooter>
       </Card>

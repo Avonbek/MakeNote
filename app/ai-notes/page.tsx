@@ -1,22 +1,21 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-// import { useUser } from "@clerk/nextjs";
-import { useMockUser } from "@/hooks/useMockUser"; // Add this import
+import { useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
 import { AnimatePresence, motion } from "framer-motion";
-import Header from "@/app/ai-notes/components/Header";
-import NotesList from "@/app/ai-notes/components/NotesList";
-import NewDocumentForm from "@/app/ai-notes/components/NewDocumentForm";
-import Footer from "@/app/ai-notes/components/Footer";
+import Header from "@/components/ai-notes/Header";
+import NotesList from "@/components/ai-notes/NotesList";
+import NewDocumentForm from "@/components/ai-notes/NewDocumentForm";
+import Footer from "@/components/ai-notes/Footer";
 import { useNotes } from "@/hooks/useNotes";
-import { useMobileDetection } from "@/app/ai-notes/hooks/useMobileDetection";
-import { FileText, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useMobileDetection } from "@/hooks/useMobileDetection";
 
 export default function AINotesPage() {
-  // const { user } = useUser();
-  const { user, isLoaded, isSignedIn } = useMockUser(); // Use the mock hook
-  const { documents, fetchNotes, addNote, deleteNotes } = useNotes(user);
+  const { user, isLoaded, isSignedIn } = useUser();
+  const router = useRouter();
+  const { notes, loading, error, fetchNotes, createNote, deleteNote } =
+    useNotes();
   const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
   const [isNewDocument, setIsNewDocument] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -27,11 +26,18 @@ export default function AINotesPage() {
   const mainRef = useRef<HTMLElement>(null);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
 
+  // Redirect to sign-in if not authenticated
   useEffect(() => {
-    if (user) {
-      fetchNotes();
+    if (isLoaded && !isSignedIn) {
+      router.push("/sign-in");
     }
-  }, [user, fetchNotes]);
+  }, [isLoaded, isSignedIn, router]);
+
+  // effects
+
+  useEffect(() => {
+    fetchNotes();
+  }, [fetchNotes]);
 
   const handleTouchStart = useCallback(
     (e: React.TouchEvent<HTMLElement>) => {
@@ -45,29 +51,6 @@ export default function AINotesPage() {
     },
     [isMobile]
   );
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-    }
-    const touchY = e.touches[0].clientY;
-    const diff = touchY - refreshStartY.current;
-    if (diff > 50 && mainRef.current && mainRef.current.scrollTop === 0) {
-      setIsRefreshing(true);
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-    }
-    if (isRefreshing) {
-      setTimeout(() => {
-        setIsRefreshing(false);
-        fetchNotes();
-      }, 1000);
-    }
-  };
 
   const handleScroll = useCallback(() => {
     if (mainRef.current) {
@@ -91,6 +74,31 @@ export default function AINotesPage() {
       }
     };
   }, [handleScroll]);
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+    }
+    const touchY = e.touches[0].clientY;
+    const diff = touchY - refreshStartY.current;
+    if (diff > 50 && mainRef.current && mainRef.current.scrollTop === 0) {
+      setIsRefreshing(true);
+    }
+  };
+
+  // handlers
+
+  const handleTouchEnd = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+    }
+    if (isRefreshing) {
+      setTimeout(() => {
+        setIsRefreshing(false);
+        fetchNotes();
+      }, 1000);
+    }
+  };
 
   const handleCheckboxChange = (docId: string) => {
     setSelectedDocuments((prev) =>
@@ -117,17 +125,26 @@ export default function AINotesPage() {
   };
 
   const handleSaveDocument = async (title: string, content: string) => {
-    await addNote(title, content, "General");
+    await createNote({ title, content, topic: "General" });
     setIsNewDocument(false);
   };
 
-  if (!isLoaded) {
+  const deleteNotes = async (ids: string[]) => {
+    for (const id of ids) {
+      await deleteNote(id);
+    }
+    setSelectedDocuments([]);
+  };
+
+  if (loading) {
     return <div>Loading...</div>;
   }
 
-  if (!isSignedIn) {
-    return <div>Please sign in to access your notes.</div>;
+  if (error) {
+    return <div>Error: {error}</div>;
   }
+
+  // render
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -163,7 +180,7 @@ export default function AINotesPage() {
             <NewDocumentForm onSave={handleSaveDocument} />
           ) : (
             <NotesList
-              documents={documents}
+              documents={notes}
               selectedDocuments={selectedDocuments}
               handleCheckboxChange={handleCheckboxChange}
               handleAddToTopic={handleAddToTopic}
