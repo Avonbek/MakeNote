@@ -45,3 +45,12 @@ const userUpdateSchema = z.object({
     .describe("user profile image URL"),
   user_id: z.string().describe("user ID"),
 });
+
+export interface Note {
+  id: string;
+  title: string;
+  content: string;
+  topic: string;
+  createdAt: string;
+  updatedAt: string;
+}
