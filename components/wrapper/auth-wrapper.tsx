@@ -1,6 +1,6 @@
-import { ReactNode } from 'react';
-import { ClerkProvider } from '@clerk/nextjs';
-import config from '@/config';
+import { ReactNode } from "react";
+import { ClerkProvider } from "@clerk/nextjs";
+import config from "@/config";
 
 interface AuthWrapperProps {
   children: ReactNode;
@@ -11,7 +11,11 @@ const AuthWrapper = ({ children }: AuthWrapperProps) => {
     return <>{children}</>;
   }
 
-  return <ClerkProvider>{children}</ClerkProvider>;
+  return (
+    <ClerkProvider signInFallbackRedirectUrl="/" signUpFallbackRedirectUrl="/">
+      {children}
+    </ClerkProvider>
+  );
 };
 
 export default AuthWrapper;

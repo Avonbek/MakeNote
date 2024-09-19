@@ -33,11 +33,49 @@ export default function AINotesPage() {
     }
   }, [isLoaded, isSignedIn, router]);
 
-  // effects
+  // callbacks
 
-  useEffect(() => {
-    fetchNotes();
-  }, [fetchNotes]);
+  const handleCheckboxChange = useCallback((docId: string) => {
+    setSelectedDocuments((prev) =>
+      prev.includes(docId)
+        ? prev.filter((id) => id !== docId)
+        : [...prev, docId]
+    );
+  }, []);
+
+  const handleAddToTopic = useCallback(() => {
+    console.log("Add to topic:", selectedDocuments);
+  }, [selectedDocuments]);
+
+  const handleStartChat = useCallback(() => {
+    console.log("Start chat with:", selectedDocuments);
+  }, [selectedDocuments]);
+
+  const clearSelection = useCallback(() => {
+    setSelectedDocuments([]);
+  }, []);
+
+  const handleNewDocument = useCallback(() => {
+    setIsNewDocument(true);
+  }, []);
+
+  const handleSaveDocument = useCallback(
+    async (title: string, content: string) => {
+      await createNote({ title, content, topic: "General" });
+      setIsNewDocument(false);
+    },
+    [createNote]
+  );
+
+  const deleteNotes = useCallback(
+    async (ids: string[]) => {
+      for (const id of ids) {
+        await deleteNote(id);
+      }
+      setSelectedDocuments([]);
+    },
+    [deleteNote]
+  );
 
   const handleTouchStart = useCallback(
     (e: React.TouchEvent<HTMLElement>) => {
@@ -49,7 +87,7 @@ export default function AINotesPage() {
       }
       refreshStartY.current = e.touches[0].clientY;
     },
-    [isMobile]
+    [isMobile, handleCheckboxChange]
   );
 
   const handleScroll = useCallback(() => {
@@ -61,6 +99,12 @@ export default function AINotesPage() {
         mainRef.current.style.overflowY = "auto";
       }
     }
+  }, []);
+
+  // effects
+
+  useEffect(() => {
+    fetchNotes();
   }, []);
 
   useEffect(() => {
@@ -75,6 +119,8 @@ export default function AINotesPage() {
     };
   }, [handleScroll]);
 
+  // handlers
+
   const handleTouchMove = (e: React.TouchEvent) => {
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
@@ -85,8 +131,6 @@ export default function AINotesPage() {
       setIsRefreshing(true);
     }
   };
-
-  // handlers
 
   const handleTouchEnd = () => {
     if (longPressTimer.current) {
@@ -100,41 +144,7 @@ export default function AINotesPage() {
     }
   };
 
-  const handleCheckboxChange = (docId: string) => {
-    setSelectedDocuments((prev) =>
-      prev.includes(docId)
-        ? prev.filter((id) => id !== docId)
-        : [...prev, docId]
-    );
-  };
-
-  const handleAddToTopic = () => {
-    console.log("Add to topic:", selectedDocuments);
-  };
-
-  const handleStartChat = () => {
-    console.log("Start chat with:", selectedDocuments);
-  };
-
-  const clearSelection = () => {
-    setSelectedDocuments([]);
-  };
-
-  const handleNewDocument = () => {
-    setIsNewDocument(true);
-  };
-
-  const handleSaveDocument = async (title: string, content: string) => {
-    await createNote({ title, content, topic: "General" });
-    setIsNewDocument(false);
-  };
-
-  const deleteNotes = async (ids: string[]) => {
-    for (const id of ids) {
-      await deleteNote(id);
-    }
-    setSelectedDocuments([]);
-  };
+  // render
 
   if (loading) {
     return <div>Loading...</div>;
@@ -143,8 +153,6 @@ export default function AINotesPage() {
   if (error) {
     return <div>Error: {error}</div>;
   }
-
-  // render
 
   return (
     <div className="min-h-screen bg-background text-foreground">
